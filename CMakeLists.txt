@@ -58,10 +58,11 @@ find_package(Threads REQUIRED)
 #add_subdirectory(googletest)
 
 ## check targets
-check_target(cctz)
-check_target(gtest)
-check_target(gtest_main)
-check_target(gmock)
+
+#check_target(cctz)
+#check_target(gtest)
+#check_target(gtest_main)
+#check_target(gmock)
 
 # -fexceptions
 set(ABSL_EXCEPTIONS_FLAG "${CMAKE_CXX_EXCEPTIONS}")
@@ -69,10 +70,15 @@ set(ABSL_EXCEPTIONS_FLAG "${CMAKE_CXX_EXCEPTIONS}")
 # fix stuff
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FIX_MSVC} ${CMAKE_CXX_FLAGS}")
 
+include_directories("/usr/src/googletest/googletest")
+include_directories("/usr/src/googletest/googlemock")
+
+add_library(gtest /usr/src/googletest/googletest/src/gtest_main.cc
+                  /usr/src/googletest/googletest/src/gtest-all.cc
+                  /usr/src/googletest/googlemock/src/gmock-all.cc)
+
 list(APPEND ABSL_TEST_COMMON_LIBRARIES
-  gtest_main
   gtest
-  gmock
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
