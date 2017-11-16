@@ -190,28 +190,28 @@ absl_test(
 
 
 # test str_split_test
-set(STR_SPLIT_TEST_SRC "str_split_test.cc")
-set(STR_SPLIT_TEST_PUBLIC_LIBRARIES absl::strings absl::base absl_throw_delegate)
+# set(STR_SPLIT_TEST_SRC "str_split_test.cc")
+# set(STR_SPLIT_TEST_PUBLIC_LIBRARIES absl::strings absl::base absl_throw_delegate)
 
-absl_test(
-  TARGET
-    str_split_test
-  SOURCES
-    ${STR_SPLIT_TEST_SRC}
-  PUBLIC_LIBRARIES
-    ${STR_SPLIT_TEST_PUBLIC_LIBRARIES}
-)
+# absl_test(
+#   TARGET
+#     str_split_test
+#   SOURCES
+#     ${STR_SPLIT_TEST_SRC}
+#   PUBLIC_LIBRARIES
+#     ${STR_SPLIT_TEST_PUBLIC_LIBRARIES}
+# )
 
 
 # test ostringstream_test
-set(OSTRINGSTREAM_TEST_SRC "internal/ostringstream_test.cc")
+# set(OSTRINGSTREAM_TEST_SRC "internal/ostringstream_test.cc")
 
-absl_test(
-  TARGET
-    ostringstream_test
-  SOURCES
-    ${OSTRINGSTREAM_TEST_SRC}
-)
+# absl_test(
+#  TARGET
+#     ostringstream_test
+#  SOURCES
+#    ${OSTRINGSTREAM_TEST_SRC}
+# )
 
 
 # test resize_uninitialized_test
@@ -226,17 +226,17 @@ absl_test(
 
 
 # test str_join_test
-set(STR_JOIN_TEST_SRC "str_join_test.cc")
-set(STR_JOIN_TEST_PUBLIC_LIBRARIES absl::strings)
+#set(STR_JOIN_TEST_SRC "str_join_test.cc")
+#set(STR_JOIN_TEST_PUBLIC_LIBRARIES absl::strings )
 
-absl_test(
-  TARGET
-    str_join_test
-  SOURCES
-    ${STR_JOIN_TEST_SRC}
-  PUBLIC_LIBRARIES
-    ${STR_JOIN_TEST_PUBLIC_LIBRARIES}
-)
+#absl_test(
+#  TARGET
+#    str_join_test
+#  SOURCES
+#    ${STR_JOIN_TEST_SRC}
+#  PUBLIC_LIBRARIES
+#    ${STR_JOIN_TEST_PUBLIC_LIBRARIES}
+#)
 
 
 # test str_cat_test
