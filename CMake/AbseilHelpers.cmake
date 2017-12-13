@@ -46,8 +46,8 @@ function(absl_library)
   add_library(${_NAME} SHARED ${ABSL_LIB_SOURCES})
   set_target_properties(${_NAME} PROPERTIES
                                  OUTPUT_NAME ${_NAME}
-                                 VERSION 0.1
-                                 SOVERSION 0)
+                                 VERSION ${VERSION}
+                                 SOVERSION ${SOVERSION})
   INSTALL(TARGETS ${_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
   target_compile_options(${_NAME} PRIVATE ${ABSL_COMPILE_CXXFLAGS} ${ABSL_LIB_PRIVATE_COMPILE_FLAGS})
