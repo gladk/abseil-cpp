@@ -72,6 +72,17 @@ inline int hex_digit_to_int(char c) {
   return x & 0xf;
 }
 
+inline bool IsSurrogate(char32_t c, absl::string_view src, std::string* error) {
+  if (c >= 0xD800 && c <= 0xDFFF) {
+    if (error) {
+      *error = absl::StrCat("invalid surrogate character (0xD800-DFFF): \\",
+                            src);
+    }
+    return true;
+  }
+  return false;
+}
+
 // ----------------------------------------------------------------------
 // CUnescapeInternal()
 //    Implements both CUnescape() and CUnescapeForNullTerminatedString().
@@ -214,6 +225,9 @@ bool CUnescapeInternal(absl::string_view source, bool leave_nulls_escaped,
             d += 5;
             break;
           }
+          if (IsSurrogate(rune, absl::string_view(hex_start, 5), error)) {
+            return false;
+          }
           d += strings_internal::EncodeUTF8Char(d, rune);
           break;
         }
@@ -258,6 +272,9 @@ bool CUnescapeInternal(absl::string_view source, bool leave_nulls_escaped,
             memcpy(d, hex_start, 9);  // U00000000
             d += 9;
             break;
+          }
+          if (IsSurrogate(rune, absl::string_view(hex_start, 9), error)) {
+            return false;
           }
           d += strings_internal::EncodeUTF8Char(d, rune);
           break;
@@ -349,31 +366,31 @@ std::string CEscapeInternal(absl::string_view src, bool use_hex, bool utf8_safe)
   return dest;
 }
 
+/* clang-format off */
+constexpr char c_escaped_len[256] = {
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 4, 4, 2, 4, 4,  // \t, \n, \r
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1,  // ", '
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // '0'..'9'
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 'A'..'O'
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1,  // 'P'..'Z', '\'
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 'a'..'o'
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4,  // 'p'..'z', DEL
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+};
+/* clang-format on */
+
 // Calculates the length of the C-style escaped version of 'src'.
 // Assumes that non-printable characters are escaped using octal sequences, and
 // that UTF-8 bytes are not handled specially.
 inline size_t CEscapedLength(absl::string_view src) {
-  /* clang-format off */
-  constexpr char c_escaped_len[256] = {
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 4, 4, 2, 4, 4,  // \t, \n, \r
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1,  // ", '
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // '0'..'9'
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 'A'..'O'
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1,  // 'P'..'Z', '\'
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 'a'..'o'
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4,  // 'p'..'z', DEL
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-  };
-  /* clang-format on */
-
   size_t escaped_len = 0;
   for (unsigned char c : src) escaped_len += c_escaped_len[c];
   return escaped_len;
@@ -392,41 +409,41 @@ void CEscapeAndAppendInternal(absl::string_view src, std::string* dest) {
   char* append_ptr = &(*dest)[cur_dest_len];
 
   for (unsigned char c : src) {
-    switch (c) {
-      case '\n':
-        *append_ptr++ = '\\';
-        *append_ptr++ = 'n';
-        break;
-      case '\r':
-        *append_ptr++ = '\\';
-        *append_ptr++ = 'r';
-        break;
-      case '\t':
-        *append_ptr++ = '\\';
-        *append_ptr++ = 't';
-        break;
-      case '\"':
-        *append_ptr++ = '\\';
-        *append_ptr++ = '\"';
-        break;
-      case '\'':
-        *append_ptr++ = '\\';
-        *append_ptr++ = '\'';
-        break;
-      case '\\':
-        *append_ptr++ = '\\';
-        *append_ptr++ = '\\';
-        break;
-      default:
-        if (!absl::ascii_isprint(c)) {
+    int char_len = c_escaped_len[c];
+    if (char_len == 1) {
+      *append_ptr++ = c;
+    } else if (char_len == 2) {
+      switch (c) {
+        case '\n':
           *append_ptr++ = '\\';
-          *append_ptr++ = '0' + c / 64;
-          *append_ptr++ = '0' + (c % 64) / 8;
-          *append_ptr++ = '0' + c % 8;
-        } else {
-          *append_ptr++ = c;
-        }
-        break;
+          *append_ptr++ = 'n';
+          break;
+        case '\r':
+          *append_ptr++ = '\\';
+          *append_ptr++ = 'r';
+          break;
+        case '\t':
+          *append_ptr++ = '\\';
+          *append_ptr++ = 't';
+          break;
+        case '\"':
+          *append_ptr++ = '\\';
+          *append_ptr++ = '\"';
+          break;
+        case '\'':
+          *append_ptr++ = '\\';
+          *append_ptr++ = '\'';
+          break;
+        case '\\':
+          *append_ptr++ = '\\';
+          *append_ptr++ = '\\';
+          break;
+      }
+    } else {
+      *append_ptr++ = '\\';
+      *append_ptr++ = '0' + c / 64;
+      *append_ptr++ = '0' + (c % 64) / 8;
+      *append_ptr++ = '0' + c % 8;
     }
   }
 }

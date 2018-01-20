@@ -18,6 +18,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/internal/raw_logging.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
 
@@ -69,8 +70,22 @@ void ThreadTwo(absl::Mutex* mutex, absl::CondVar* condvar,
 }
 
 // Launch thread 1 and thread 2, and block on their completion.
+// If any of 'mutex', 'condvar', or 'notification' is nullptr, use a locally
+// constructed instance instead.
 void RunTests(absl::Mutex* mutex, absl::CondVar* condvar,
               absl::Notification* notification) {
+  absl::Mutex default_mutex;
+  absl::CondVar default_condvar;
+  absl::Notification default_notification;
+  if (!mutex) {
+    mutex = &default_mutex;
+  }
+  if (!condvar) {
+    condvar = &default_condvar;
+  }
+  if (!notification) {
+    notification = &default_notification;
+  }
   bool state = false;
   std::thread thread_one(ThreadOne, mutex, condvar, notification, &state);
   std::thread thread_two(ThreadTwo, mutex, condvar, notification, &state);
@@ -84,6 +99,28 @@ void TestLocals() {
   absl::Notification notification;
   RunTests(&mutex, &condvar, &notification);
 }
+
+// Global variables during start and termination
+//
+// In a translation unit, static storage duration variables are initialized in
+// the order of their definitions, and destroyed in the reverse order of their
+// definitions.  We can use this to arrange for tests to be run on these objects
+// before they are created, and after they are destroyed.
+
+using Function = void (*)();
+
+class OnConstruction {
+ public:
+  explicit OnConstruction(Function fn) { fn(); }
+};
+
+class OnDestruction {
+ public:
+  explicit OnDestruction(Function fn) : fn_(fn) {}
+  ~OnDestruction() { fn_(); }
+ private:
+  Function fn_;
+};
 
 }  // namespace
 

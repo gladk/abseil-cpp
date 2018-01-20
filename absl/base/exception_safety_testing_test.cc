@@ -1,3 +1,17 @@
+// Copyright 2017 The Abseil Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "absl/base/internal/exception_safety_testing.h"
 
 #include <cstddef>
@@ -49,7 +63,7 @@ TEST_F(ThrowingValueTest, Throws) {
 // the countdown doesn't hit 0, and doesn't modify the state of the
 // ThrowingValue if it throws
 template <typename F>
-void TestOp(F&& f) {
+void TestOp(const F& f) {
   UnsetCountdown();
   ExpectNoThrow(f);
 
@@ -139,11 +153,21 @@ TEST_F(ThrowingValueTest, ThrowingStreamOps) {
   TestOp([&]() { std::cout << bomb; });
 }
 
+template <typename F>
+void TestAllocatingOp(const F& f) {
+  UnsetCountdown();
+  ExpectNoThrow(f);
+
+  SetCountdown();
+  EXPECT_THROW(f(), exceptions_internal::TestBadAllocException);
+  UnsetCountdown();
+}
+
 TEST_F(ThrowingValueTest, ThrowingAllocatingOps) {
   // make_unique calls unqualified operator new, so these exercise the
   // ThrowingValue overloads.
-  TestOp([]() { return absl::make_unique<ThrowingValue<>>(1); });
-  TestOp([]() { return absl::make_unique<ThrowingValue<>[]>(2); });
+  TestAllocatingOp([]() { return absl::make_unique<ThrowingValue<>>(1); });
+  TestAllocatingOp([]() { return absl::make_unique<ThrowingValue<>[]>(2); });
 }
 
 TEST_F(ThrowingValueTest, NonThrowingMoveCtor) {
@@ -385,7 +409,8 @@ struct CallOperator {
 };
 
 struct NonNegative {
-  friend testing::AssertionResult AbslCheckInvariants(NonNegative* g) {
+  friend testing::AssertionResult AbslCheckInvariants(
+      NonNegative* g, absl::InternalAbslNamespaceFinder) {
     if (g->i >= 0) return testing::AssertionSuccess();
     return testing::AssertionFailure()
            << "i should be non-negative but is " << g->i;
@@ -489,7 +514,8 @@ struct HasReset : public NonNegative {
 
   void reset() { i = 0; }
 
-  friend bool AbslCheckInvariants(HasReset* h) {
+  friend bool AbslCheckInvariants(HasReset* h,
+                                  absl::InternalAbslNamespaceFinder) {
     h->reset();
     return h->i == 0;
   }
@@ -577,7 +603,8 @@ struct ExhaustivenessTester {
     return true;
   }
 
-  friend testing::AssertionResult AbslCheckInvariants(ExhaustivenessTester*) {
+  friend testing::AssertionResult AbslCheckInvariants(
+      ExhaustivenessTester*, absl::InternalAbslNamespaceFinder) {
     return testing::AssertionSuccess();
   }
 

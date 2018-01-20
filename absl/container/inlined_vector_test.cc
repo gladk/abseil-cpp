@@ -393,6 +393,82 @@ TEST(InlinedVectorTest, Noexcept) {
                 absl::InlinedVector<MoveCanThrow, 2>>::value));
 }
 
+TEST(InlinedVectorTest, EmplaceBack) {
+  absl::InlinedVector<std::pair<std::string, int>, 1> v;
+
+  auto& inlined_element = v.emplace_back("answer", 42);
+  EXPECT_EQ(&inlined_element, &v[0]);
+  EXPECT_EQ(inlined_element.first, "answer");
+  EXPECT_EQ(inlined_element.second, 42);
+
+  auto& allocated_element = v.emplace_back("taxicab", 1729);
+  EXPECT_EQ(&allocated_element, &v[1]);
+  EXPECT_EQ(allocated_element.first, "taxicab");
+  EXPECT_EQ(allocated_element.second, 1729);
+}
+
+TEST(InlinedVectorTest, ShrinkToFitGrowingVector) {
+  absl::InlinedVector<std::pair<std::string, int>, 1> v;
+
+  v.shrink_to_fit();
+  EXPECT_EQ(v.capacity(), 1);
+
+  v.emplace_back("answer", 42);
+  v.shrink_to_fit();
+  EXPECT_EQ(v.capacity(), 1);
+
+  v.emplace_back("taxicab", 1729);
+  EXPECT_GE(v.capacity(), 2);
+  v.shrink_to_fit();
+  EXPECT_EQ(v.capacity(), 2);
+
+  v.reserve(100);
+  EXPECT_GE(v.capacity(), 100);
+  v.shrink_to_fit();
+  EXPECT_EQ(v.capacity(), 2);
+}
+
+TEST(InlinedVectorTest, ShrinkToFitEdgeCases) {
+  {
+    absl::InlinedVector<std::pair<std::string, int>, 1> v;
+    v.emplace_back("answer", 42);
+    v.emplace_back("taxicab", 1729);
+    EXPECT_GE(v.capacity(), 2);
+    v.pop_back();
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), 1);
+    EXPECT_EQ(v[0].first, "answer");
+    EXPECT_EQ(v[0].second, 42);
+  }
+
+  {
+    absl::InlinedVector<std::string, 2> v(100);
+    v.resize(0);
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), 2);  // inlined capacity
+  }
+
+  {
+    absl::InlinedVector<std::string, 2> v(100);
+    v.resize(1);
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), 2);  // inlined capacity
+  }
+
+  {
+    absl::InlinedVector<std::string, 2> v(100);
+    v.resize(2);
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), 2);
+  }
+
+  {
+    absl::InlinedVector<std::string, 2> v(100);
+    v.resize(3);
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), 3);
+  }
+}
 
 TEST(IntVec, Insert) {
   for (int len = 0; len < 20; len++) {
@@ -1575,6 +1651,20 @@ TEST(AllocatorSupportTest, CountAllocations) {
     MyAlloc alloc3(&allocated3);
     AllocVec v3(std::move(v), alloc3);
     EXPECT_THAT(allocated3, v3.size() * sizeof(int));
+  }
+  EXPECT_EQ(allocated, 0);
+  {
+    // Test shrink_to_fit deallocations.
+    AllocVec v(8, 2, alloc);
+    EXPECT_EQ(allocated, 8 * sizeof(int));
+    v.resize(5);
+    EXPECT_EQ(allocated, 8 * sizeof(int));
+    v.shrink_to_fit();
+    EXPECT_EQ(allocated, 5 * sizeof(int));
+    v.resize(4);
+    EXPECT_EQ(allocated, 5 * sizeof(int));
+    v.shrink_to_fit();
+    EXPECT_EQ(allocated, 0);
   }
 }
 

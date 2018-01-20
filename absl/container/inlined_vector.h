@@ -365,13 +365,14 @@ class InlinedVector {
   // InlinedVector::emplace_back()
   //
   // Constructs and appends an object to the inlined vector.
+  //
+  // Returns a reference to the inserted element.
   template <typename... Args>
-  void emplace_back(Args&&... args) {
+  value_type& emplace_back(Args&&... args) {
     size_type s = size();
     assert(s <= capacity());
     if (ABSL_PREDICT_FALSE(s == capacity())) {
-      GrowAndEmplaceBack(std::forward<Args>(args)...);
-      return;
+      return GrowAndEmplaceBack(std::forward<Args>(args)...);
     }
     assert(s < capacity());
 
@@ -383,7 +384,7 @@ class InlinedVector {
       tag().set_inline_size(s + 1);
       space = inlined_space();
     }
-    Construct(space + s, std::forward<Args>(args)...);
+    return Construct(space + s, std::forward<Args>(args)...);
   }
 
   // InlinedVector::push_back()
@@ -572,6 +573,42 @@ class InlinedVector {
     }
   }
 
+  // InlinedVector::shrink_to_fit()
+  //
+  // Reduces memory usage by freeing unused memory.
+  // After this call `capacity()` will be equal to `max(N, size())`.
+  //
+  // If `size() <= N` and the elements are currently stored on the heap, they
+  // will be moved to the inlined storage and the heap memory deallocated.
+  // If `size() > N` and `size() < capacity()` the elements will be moved to
+  // a reallocated storage on heap.
+  void shrink_to_fit() {
+    const auto s = size();
+    if (!allocated() || s == capacity()) {
+      // There's nothing to deallocate.
+      return;
+    }
+
+    if (s <= N) {
+      // Move the elements to the inlined storage.
+      // We have to do this using a temporary, because inlined_storage and
+      // allocation_storage are in a union field.
+      auto temp = std::move(*this);
+      assign(std::make_move_iterator(temp.begin()),
+             std::make_move_iterator(temp.end()));
+      return;
+    }
+
+    // Reallocate storage and move elements.
+    // We can't simply use the same approach as above, because assign() would
+    // call into reserve() internally and reserve larger capacity than we need.
+    Allocation new_allocation(allocator(), s);
+    UninitializedCopy(std::make_move_iterator(allocated_space()),
+                      std::make_move_iterator(allocated_space() + s),
+                      new_allocation.buffer());
+    ResetAllocation(new_allocation, s);
+  }
+
   // InlinedVector::swap()
   //
   // Swaps the contents of this inlined vector with the contents of `other`.
@@ -703,26 +740,30 @@ class InlinedVector {
   }
 
   template <typename... Args>
-  void GrowAndEmplaceBack(Args&&... args) {
+  value_type& GrowAndEmplaceBack(Args&&... args) {
     assert(size() == capacity());
     const size_type s = size();
 
     Allocation new_allocation(allocator(), 2 * capacity());
 
-    Construct(new_allocation.buffer() + s, std::forward<Args>(args)...);
+    value_type& new_element =
+        Construct(new_allocation.buffer() + s, std::forward<Args>(args)...);
     UninitializedCopy(std::make_move_iterator(data()),
                       std::make_move_iterator(data() + s),
                       new_allocation.buffer());
 
     ResetAllocation(new_allocation, s + 1);
+
+    return new_element;
   }
 
   void InitAssign(size_type n);
   void InitAssign(size_type n, const value_type& t);
 
   template <typename... Args>
-  void Construct(pointer p, Args&&... args) {
+  value_type& Construct(pointer p, Args&&... args) {
     AllocatorTraits::construct(allocator(), p, std::forward<Args>(args)...);
+    return *p;
   }
 
   template <typename Iter>

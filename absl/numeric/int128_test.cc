@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <limits>
 #include <random>
-#include <sstream>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -111,7 +110,7 @@ TEST(Uint128, AllTests) {
   absl::uint128 big = absl::MakeUint128(2000, 2);
   absl::uint128 big_minus_one = absl::MakeUint128(2000, 1);
   absl::uint128 bigger = absl::MakeUint128(2001, 1);
-  absl::uint128 biggest = absl::kuint128max;
+  absl::uint128 biggest = absl::Uint128Max();
   absl::uint128 high_low = absl::MakeUint128(1, 0);
   absl::uint128 low_high =
       absl::MakeUint128(0, std::numeric_limits<uint64_t>::max());
@@ -176,8 +175,8 @@ TEST(Uint128, AllTests) {
   big_copy = big;
   EXPECT_EQ(big >> 73, big_copy >>= 73);
 
-  EXPECT_EQ(Uint128High64(biggest), std::numeric_limits<uint64_t>::max());
-  EXPECT_EQ(Uint128Low64(biggest), std::numeric_limits<uint64_t>::max());
+  EXPECT_EQ(absl::Uint128High64(biggest), std::numeric_limits<uint64_t>::max());
+  EXPECT_EQ(absl::Uint128Low64(biggest), std::numeric_limits<uint64_t>::max());
   EXPECT_EQ(zero + one, one);
   EXPECT_EQ(one + one, two);
   EXPECT_EQ(big_minus_one + one, big);
@@ -191,8 +190,8 @@ TEST(Uint128, AllTests) {
   EXPECT_EQ(zero - 1, biggest);
   EXPECT_EQ(high_low - one, low_high);
   EXPECT_EQ(low_high + one, high_low);
-  EXPECT_EQ(Uint128High64((absl::uint128(1) << 64) - 1), 0);
-  EXPECT_EQ(Uint128Low64((absl::uint128(1) << 64) - 1),
+  EXPECT_EQ(absl::Uint128High64((absl::uint128(1) << 64) - 1), 0);
+  EXPECT_EQ(absl::Uint128Low64((absl::uint128(1) << 64) - 1),
             std::numeric_limits<uint64_t>::max());
   EXPECT_TRUE(!!one);
   EXPECT_TRUE(!!high_low);
@@ -228,8 +227,10 @@ TEST(Uint128, AllTests) {
 
   EXPECT_EQ(big, -(-big));
   EXPECT_EQ(two, -((-one) - 1));
-  EXPECT_EQ(absl::kuint128max, -one);
+  EXPECT_EQ(absl::Uint128Max(), -one);
   EXPECT_EQ(zero, -zero);
+
+  EXPECT_EQ(absl::Uint128Max(), absl::kuint128max);
 }
 
 TEST(Uint128, ConversionTests) {
@@ -425,28 +426,6 @@ TEST(Uint128, ConstexprTest) {
   EXPECT_EQ(zero, absl::uint128(0));
   EXPECT_EQ(one, absl::uint128(1));
   EXPECT_EQ(minus_two, absl::MakeUint128(-1, -2));
-}
-
-TEST(Uint128, OStream) {
-  struct StreamCase {
-    absl::uint128 val;
-    std::ios_base::fmtflags flags;
-    std::streamsize width;
-    char fill;
-    const char* rep;
-  };
-
-  std::vector<StreamCase> cases = {
-#include "absl/numeric/int128_test_unsigned_ostream_cases.inc"
-  };
-  for (const StreamCase& test_case : cases) {
-    std::ostringstream os;
-    os.flags(test_case.flags);
-    os.width(test_case.width);
-    os.fill(test_case.fill);
-    os << test_case.val;
-    EXPECT_EQ(test_case.rep, os.str());
-  }
 }
 
 }  // namespace

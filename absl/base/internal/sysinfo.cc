@@ -14,6 +14,8 @@
 
 #include "absl/base/internal/sysinfo.h"
 
+#include "absl/base/attributes.h"
+
 #ifdef _WIN32
 #include <shlwapi.h>
 #include <windows.h>
@@ -29,7 +31,7 @@
 #include <sys/syscall.h>
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
 

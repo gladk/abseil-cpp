@@ -113,7 +113,7 @@ std::string Utf8SafeCEscape(absl::string_view src);
 // Utf8SafeCHexEscape()
 //
 // Escapes a 'src' std::string using C-style escape sequences, escaping bytes as
-// hexidecimal sequences, and passing through UTF-8 characters without
+// hexadecimal sequences, and passing through UTF-8 characters without
 // conversion.
 std::string Utf8SafeCHexEscape(absl::string_view src);
 
@@ -152,7 +152,7 @@ std::string HexStringToBytes(absl::string_view from);
 
 // BytesToHexString()
 //
-// Converts binary data into an ASCII text std::string, returing a std::string of size
+// Converts binary data into an ASCII text std::string, returning a std::string of size
 // `2*from.size()`.
 std::string BytesToHexString(absl::string_view from);
 

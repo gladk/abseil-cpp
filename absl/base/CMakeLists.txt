@@ -20,6 +20,7 @@ list(APPEND BASE_PUBLIC_HEADERS
   "casts.h"
   "config.h"
   "dynamic_annotations.h"
+  "log_severity.h"
   "macros.h"
   "optimization.h"
   "policy_checks.h"
@@ -33,17 +34,17 @@ list(APPEND BASE_INTERNAL_HEADERS
   "internal/cycleclock.h"
   "internal/endian.h"
   "internal/exception_testing.h"
+  "internal/exception_safety_testing.h"
   "internal/identity.h"
   "internal/invoke.h"
-  "internal/log_severity.h"
   "internal/low_level_alloc.h"
   "internal/low_level_scheduling.h"
-  "internal/malloc_extension_c.h"
   "internal/malloc_extension.h"
   "internal/malloc_hook_c.h"
   "internal/malloc_hook.h"
   "internal/malloc_hook_invoke.h"
   "internal/per_thread_tls.h"
+  "internal/pretty_function.h"
   "internal/raw_logging.h"
   "internal/scheduling_mode.h"
   "internal/spinlock.h"
@@ -58,8 +59,9 @@ list(APPEND BASE_INTERNAL_HEADERS
 
 
 # absl_base main library
-list(APPEND BASE_SRC 
+list(APPEND BASE_SRC
   "internal/cycleclock.cc"
+  "internal/exception_safety_testing.cc"
   "internal/raw_logging.cc"
   "internal/spinlock.cc"
   "internal/sysinfo.cc"
@@ -319,6 +321,20 @@ absl_test(
     ${THREAD_IDENTITY_TEST_PUBLIC_LIBRARIES}
 )
 
+#test exceptions_safety_testing_test
+set(EXCEPTION_SAFETY_TESTING_TEST_SRC "exception_safety_testing_test.cc")
+set(EXCEPTION_SAFETY_TESTING_TEST_PUBLIC_LIBRARIES absl::base absl::memory absl::meta absl::strings absl::optional)
+
+absl_test(
+  TARGET
+    absl_exception_safety_testing_test
+  SOURCES
+    ${EXCEPTION_SAFETY_TESTING_TEST_SRC}
+  PUBLIC_LIBRARIES
+    ${EXCEPTION_SAFETY_TESTING_TEST_PUBLIC_LIBRARIES}
+  PRIVATE_COMPILE_FLAGS
+    ${ABSL_EXCEPTIONS_FLAG}
+)
 
 # test absl_malloc_extension_system_malloc_test
 set(MALLOC_EXTENSION_SYSTEM_MALLOC_TEST_SRC "internal/malloc_extension_test.cc")
