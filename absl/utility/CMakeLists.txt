@@ -25,7 +25,7 @@ list(APPEND UTILITY_SRC
   ${UTILITY_PUBLIC_HEADERS}
 )
 
-absl_library(
+absl_header_library(
   TARGET
     absl_utility
   SOURCES
@@ -44,7 +44,7 @@ absl_library(
 
 # test utility_test
 set(UTILITY_TEST_SRC "utility_test.cc")
-set(UTILITY_TEST_PUBLIC_LIBRARIES absl::utility)
+set(UTILITY_TEST_PUBLIC_LIBRARIES absl::utility absl::strings)
 
 absl_test(
   TARGET
