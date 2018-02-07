@@ -116,28 +116,6 @@ absl_library(
     throw_delegate
 )
 
-if(BUILD_TESTING)
-  # exception-safety testing library
-  set(EXCEPTION_SAFETY_TESTING_SRC "internal/exception_safety_testing.cc")
-  set(EXCEPTION_SAFETY_TESTING_PUBLIC_LIBRARIES
-    ${ABSL_TEST_COMMON_LIBRARIES}
-    absl::base
-    absl::memory
-    absl::meta
-    absl::strings
-    absl::types
-  )
-
-absl_library(
-  TARGET
-    absl_base_internal_exception_safety_testing
-  SOURCES
-    ${EXCEPTION_SAFETY_TESTING_SRC}
-  PUBLIC_LIBRARIES
-    ${EXCEPTION_SAFETY_TESTING_PUBLIC_LIBRARIES}
-)
-endif()
-
 
 # dynamic_annotations library
 set(DYNAMIC_ANNOTATIONS_SRC "dynamic_annotations.cc")
@@ -364,19 +342,6 @@ absl_test(
 )
 
 #test exceptions_safety_testing_test
-set(EXCEPTION_SAFETY_TESTING_TEST_SRC "exception_safety_testing_test.cc")
-set(EXCEPTION_SAFETY_TESTING_TEST_PUBLIC_LIBRARIES absl::base absl::memory absl::meta absl::strings absl::optional)
-
-absl_test(
-  TARGET
-    absl_exception_safety_testing_test
-  SOURCES
-    ${EXCEPTION_SAFETY_TESTING_TEST_SRC}
-  PUBLIC_LIBRARIES
-    ${EXCEPTION_SAFETY_TESTING_TEST_PUBLIC_LIBRARIES}
-  PRIVATE_COMPILE_FLAGS
-    ${ABSL_EXCEPTIONS_FLAG}
-)
 
 # test absl_malloc_extension_system_malloc_test
 set(MALLOC_EXTENSION_SYSTEM_MALLOC_TEST_SRC "internal/malloc_extension_test.cc")

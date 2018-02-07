@@ -132,16 +132,6 @@ absl_test(
 set(ANY_EXCEPTION_SAFETY_TEST_SRC "any_exception_safety_test.cc")
 set(ANY_EXCEPTION_SAFETY_TEST_PUBLIC_LIBRARIES absl::any absl::base absl::base_internal_exception_safety_testing)
 
-absl_test(
-  TARGET
-    any_exception_safety_test
-  SOURCES
-    ${ANY_EXCEPTION_SAFETY_TEST_SRC}
-  PUBLIC_LIBRARIES
-    ${ANY_EXCEPTION_SAFETY_TEST_PUBLIC_LIBRARIES}
-  PRIVATE_COMPILE_FLAGS
-    ${ABSL_EXCEPTIONS_FLAG}
-)
 
 
 # test span_test
