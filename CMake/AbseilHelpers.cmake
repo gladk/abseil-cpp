@@ -30,6 +30,7 @@ include(CMakeParseArguments)
 # create a target associated to <NAME>
 # libraries are installed under CMAKE_INSTALL_FULL_LIBDIR by default
 #
+INCLUDE(GNUInstallDirs)
 function(absl_library)
   cmake_parse_arguments(ABSL_LIB
     "DISABLE_INSTALL" # keep that in case we want to support installation one day
@@ -41,7 +42,12 @@ function(absl_library)
   set(_NAME ${ABSL_LIB_TARGET})
   string(TOUPPER ${_NAME} _UPPER_NAME)
 
-  add_library(${_NAME} STATIC ${ABSL_LIB_SOURCES})
+  add_library(${_NAME} SHARED ${ABSL_LIB_SOURCES})
+  set_target_properties(${_NAME} PROPERTIES
+                                 OUTPUT_NAME ${_NAME}
+                                 VERSION ${VERSION}
+                                 SOVERSION ${SOVERSION})
+  INSTALL(TARGETS ${_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
   target_compile_options(${_NAME} PRIVATE ${ABSL_COMPILE_CXXFLAGS} ${ABSL_LIB_PRIVATE_COMPILE_FLAGS})
   target_link_libraries(${_NAME} PUBLIC ${ABSL_LIB_PUBLIC_LIBRARIES})
